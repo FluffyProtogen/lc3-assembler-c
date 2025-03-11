@@ -1,4 +1,6 @@
 #include "utils.h"
+
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,7 +26,6 @@ UnescapeResult unescape_string(const char *input, size_t input_len, char **outpu
 
     *output = malloc(len + 1);
     *output_len = len;
-    printf("len: %lu, output %p\n", len, output);
     len = 0;
     for (size_t i = 0; i < input_len; i++) {
         if (input[len] == '\\') {
@@ -48,4 +49,13 @@ UnescapeResult unescape_string(const char *input, size_t input_len, char **outpu
     (*output)[len] = 0;
 
     return US_ALLOC;
+}
+
+bool fit_to_bits(int32_t number, uint8_t bits, uint16_t *result) {
+    int32_t min = -pow(2, bits - 1);
+    int32_t max = pow(2, bits - 1) - 1;
+    if (number < min || number > max)
+        return false;
+    *result = ((uint16_t)number) & (0xFFFF >> (16 - bits));
+    return true;
 }

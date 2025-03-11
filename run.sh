@@ -1,2 +1,2 @@
 #!/bin/bash
-gcc -g -o main src/*.c src/assembler/*.c -Wall -Wextra && ./main
+gcc -g -lm -o main src/*.c src/assembler/*.c -Wall -Wextra && ./main

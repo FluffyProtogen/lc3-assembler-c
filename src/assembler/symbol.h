@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdint.h>
 #include "token.h"
 
@@ -21,7 +23,6 @@ typedef enum {
     ST_BAD_BLKW_AMOUNT,
     ST_BAD_STRINGZ,
     ST_BAD_STRING_ESCAPE,
-    ST_TRAILING_TOKENS,
     ST_ORIG_INSIDE_ORIG,
     ST_NO_END,
     ST_SYMBOL_ALREADY_EXISTS,

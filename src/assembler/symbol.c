@@ -9,6 +9,13 @@
 #include "symbol.h"
 #include "token.h"
 
+#define ADVANCE_TOKEN                      \
+    do {                                   \
+        if (i + 1 >= line_tokens->len)     \
+            return ST_NO_MORE_TOKENS;      \
+        token = &line_tokens->tokens[++i]; \
+    } while (0)
+
 SymbolTableResult add_symbol(SymbolTable *table, size_t *table_cap, char *symbol, int32_t cur_address) {
     for (size_t i = 0; i < table->len; i++) {
         if (strcasecmp(table->symbols[i].symbol, symbol) == 0)
@@ -38,17 +45,14 @@ SymbolTableResult generate_symbol_table(SymbolTable *table, const LineTokensList
             if (next_address == -1) {
                 if (token->type != ORIG)
                     return ST_TOKEN_BEFORE_ORIG;
-                if (i + 1 >= line_tokens->len)
-                    return ST_NO_MORE_TOKENS;
-
-                token = &line_tokens->tokens[++i];
+                ADVANCE_TOKEN;
                 if (token->type != NUMBER)
                     return ST_NO_ORIG_NUMBER;
                 if (token->data.number < 0)
                     return ST_NEGATIVE_ORIG;
 
                 next_address = token->data.number;
-                continue;
+                goto continue_lines;
             }
 
             switch (token->type) {
@@ -65,10 +69,10 @@ SymbolTableResult generate_symbol_table(SymbolTable *table, const LineTokensList
                     next_address = -1;
                     goto continue_lines;
                 case STRINGZ:
-                    token = &line_tokens->tokens[++i];
+                    ADVANCE_TOKEN;
                     if (token->type != QUOTE)
                         return ST_BAD_STRINGZ;
-                    token = &line_tokens->tokens[++i];
+                    ADVANCE_TOKEN;
                     if (token->type != TEXT)
                         return ST_BAD_STRINGZ;
 
@@ -83,12 +87,12 @@ SymbolTableResult generate_symbol_table(SymbolTable *table, const LineTokensList
                     if (result == US_ALLOC)
                         free(unescaped);
 
-                    token = &line_tokens->tokens[++i];
+                    ADVANCE_TOKEN;
                     if (token->type != QUOTE)
                         return ST_BAD_STRINGZ;
                     goto continue_lines;
                 case BLKW:
-                    token = &line_tokens->tokens[++i];
+                    ADVANCE_TOKEN;
                     if (token->type != NUMBER)
                         return ST_NO_BLKW_AMOUNT;
                     if (token->data.number <= 0)

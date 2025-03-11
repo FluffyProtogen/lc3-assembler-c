@@ -174,13 +174,15 @@ LineTokenizerResult tokenize_lines(LineTokensList *list, const char **lines, siz
                 line_tokens.tokens = realloc(line_tokens.tokens, sizeof(Token) * (line_tokens_cap *= 2));
             line_tokens.tokens[line_tokens.len++] = token;
         }
+        // propagate the failure up
+        if (result != LT_NO_MORE_TOKENS) {
+            free(line_tokens.tokens);
+            return result;
+        }
 
         if (list->len == list_cap)
             list->line_tokens = realloc(list->line_tokens, sizeof(LineTokens) * (list_cap *= 2));
         list->line_tokens[list->len++] = line_tokens;
-        // propagate the failure up, but first add the previous item to the list so it can get freed
-        if (result != LT_NO_MORE_TOKENS)
-            return result;
     }
     return LT_SUCCESS;
 }

@@ -1,26 +1,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "assembler/parser.h"
 #include "assembler/symbol.h"
 #include "assembler/token.h"
 
 int main() {
+    printf("TODO: check for overlapping memory from origs\n");
     int ret = 0;
     const char *lines[] = {
-        ".orig x3000",                   //
-        "ADD R1, R0, x5432\n",           //
-        "NoT R1, R1\n",                  //
-        "ADD R1, R1, 42069\n",           //
-        "\n",                            //
-        "; amogus\n",                    //
-        "FLUF BRnzp FLOOF, x1\n",        //
-        ".blkw 3",                       //
-        "FLOOF ADD\n",                   //
-        ".end",                          //
-        ".orig x4000",                   //
-        "FLuFfy AMOgus ADD R1, R1, R1",  //
+        ".orig x3000",             //
+        "ADD R1, R0, -16\n",       //
+        "NoT R1, R1\n",            //
+        "ADD R1, R1, 42069\n",     //
+        "\n",                      //
+        "; amogus\n",              //
+        "FLUF BRnzp FLOOF, x1\n",  //
+        ".blkw 3",                 //
+        "FLOOF ADD\n",             //
+        ".end",                    //
+        ".orig x4000",             //
+        "AMOgus ADD R1, R1, R1",   //
         "owo .stringz \"hi\\n\"",
-        "MantledBeast LEA R2, 0\n",
+        "Fluffy MantledBeast LEA R2, 0\n",
         ".end",
     };
 
@@ -53,21 +55,29 @@ int main() {
             debug_token_print(&token_list.line_tokens[line].tokens[i]);
     }
 
-    SymbolTable table;
-    SymbolTableResult st_result = generate_symbol_table(&table, &token_list, &lines_read);
+    SymbolTable symbol_table;
+    SymbolTableResult st_result = generate_symbol_table(&symbol_table, &token_list, &lines_read);
     if (st_result != ST_SUCCESS) {
-        printf("Failed at line %lu with err %d\n", lines_read, st_result);
-        free_tokens_list(&token_list);
-        free_symbol_table(&table);
+        printf("Symbol table failed at line %lu with err %d\n", lines_read, st_result);
         ret = 1;
         goto free_symbols;
     }
 
-    for (size_t i = 0; i < table.len; i++)
-        printf("symbol: %s  addr: %x\n", table.symbols[i].symbol, table.symbols[i].addr);
+    for (size_t i = 0; i < symbol_table.len; i++)
+        printf("symbol: %s  addr: %x\n", symbol_table.symbols[i].symbol, symbol_table.symbols[i].addr);
 
+    Instructions instructions;
+    ParserResult ps_result = parse_instructions(&instructions, &token_list, &symbol_table, &lines_read);
+    if (ps_result != PS_SUCCESS) {
+        printf("Parsing failed at line %lu with err %d\n", lines_read, ps_result);
+        ret = 1;
+        goto free_instructions;
+    }
+
+free_instructions:
+    free(instructions.instructions);
 free_symbols:
-    free_symbol_table(&table);
+    free_symbol_table(&symbol_table);
 free_tokens:
     free_tokens_list(&token_list);
     return ret;
