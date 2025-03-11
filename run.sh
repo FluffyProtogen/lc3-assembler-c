@@ -1,2 +1,2 @@
 #!/bin/bash
-gcc -o main main.c tokenizer.c token.c && ./main
+gcc -g -o main main.c token.c -Wall -Wextra && ./main

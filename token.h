@@ -54,7 +54,22 @@ typedef struct {
 
 typedef struct {
     Token token;
-    int line;
+    size_t line;
 } LineToken;
+
+typedef struct {
+    LineToken *line_tokens;
+    size_t len;
+    size_t cap;
+} LineTokens;
+
+typedef enum {
+    SUCCESS,
+    NO_MORE_TOKENS,
+    INTEGER_TOO_LARGE,
+    INVALID_INTEGER,
+} LineTokenizerResult;
+
+LineTokenizerResult tokenize_lines(LineTokens *line_tokens, const char **lines, size_t line_count, size_t *lines_read);
 
 void debug_token_print(const Token *token);

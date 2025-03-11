@@ -1,42 +1,37 @@
-#include <limits.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "token.h"
-#include "tokenizer.h"
 
 int main() {
-    char *lines[] = {
-        "ADD R1, R0, x5432\n",
-        "NOT R1, R1\n",
-        "ADD R1, R1, 1\n",
-        "BRnzp FLOOF\n",
+    const char *lines[] = {
+        "ADD R1, R0, x5432\n", "NoT R1, R1\n", "ADD R1, R1, 42069\n", "", "; amogus", "BRnzp FLOOF, x1\n",
     };
 
-    for (int i = 0; i < sizeof(lines) / sizeof(lines[0]); i++) {
-        printf("Line: %s", lines[i]);
-        LineTokenizer tokenizer = {.remaining = lines[i]};
-
-        LineTokenizerResult result;
-        Token token;
-        while ((result = line_tokenizer_next_token(&tokenizer, &token)) == SUCCESS) {
-            debug_token_print(&token);
-        }
-
+    LineTokens tokens;
+    size_t lines_read;
+    LineTokenizerResult result = tokenize_lines(&tokens, lines, sizeof(lines) / sizeof(lines[0]), &lines_read);
+    if (result != SUCCESS) {
+        printf("Failed at line %lu: ", lines_read);
         switch (result) {
-            case SUCCESS:
-            case NO_MORE_TOKENS:
-                break;
             case INVALID_INTEGER:
-                printf("Invalid integer at line %d\n", i + 1);
-                exit(1);
+                printf("invalid integer\n");
                 break;
             case INTEGER_TOO_LARGE:
-                printf("Integer too large at line %d\n", i + 1);
-                exit(1);
+                printf("integer too large\n");
+                break;
+            default:
                 break;
         }
-        printf("\n");
+        free(tokens.line_tokens);
+        exit(1);
     }
+
+    printf("Successfully parsed %lu lines:\n", lines_read);
+    for (size_t i = 0; i < tokens.len; i++) {
+        printf("line: %lu ", tokens.line_tokens[i].line);
+        debug_token_print(&tokens.line_tokens[i].token);
+    }
+
+    free(tokens.line_tokens);
 }
