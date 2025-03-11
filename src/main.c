@@ -5,6 +5,7 @@
 #include "assembler/token.h"
 
 int main() {
+    int ret = 0;
     const char *lines[] = {
         ".orig x3000",                   //
         "ADD R1, R0, x5432\n",           //
@@ -41,8 +42,8 @@ int main() {
             default:
                 break;
         }
-        free_tokens_list(&token_list);
-        return 1;
+        ret = 1;
+        goto free_tokens;
     }
 
     printf("Successfully parsed %lu lines:\n", lines_read);
@@ -58,12 +59,16 @@ int main() {
         printf("Failed at line %lu with err %d\n", lines_read, st_result);
         free_tokens_list(&token_list);
         free_symbol_table(&table);
-        return 1;
+        ret = 1;
+        goto free_symbols;
     }
 
     for (size_t i = 0; i < table.len; i++)
         printf("symbol: %s  addr: %x\n", table.symbols[i].symbol, table.symbols[i].addr);
 
-    free_tokens_list(&token_list);
+free_symbols:
     free_symbol_table(&table);
+free_tokens:
+    free_tokens_list(&token_list);
+    return ret;
 }
