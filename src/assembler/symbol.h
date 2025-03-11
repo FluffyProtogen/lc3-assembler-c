@@ -20,8 +20,10 @@ typedef enum {
     ST_OVERLAPPING_MEM,
     ST_NO_BLKW_AMOUNT,
     ST_BAD_BLKW_AMOUNT,
-    ST_NO_STRINGZ_TEXT,
+    ST_BAD_STRINGZ,
     ST_TRAILING_TOKENS,
+    ST_ORIG_INSIDE_ORIG,
+    ST_NO_END,
 } SymbolTableResult;
 
 SymbolTableResult generate_symbol_table(SymbolTable *table, const LineTokensList *line_tokens, size_t *lines_read);

@@ -69,6 +69,9 @@ LineTokenizerResult line_tokenizer_next_token(LineTokenizer *tokenizer, Token *r
             case ',':
                 *result = (Token){.span_start = tokenizer->remaining++, .span_len = 1, .type = COMMA};
                 return LT_SUCCESS;
+            case '"':
+                *result = (Token){.span_start = tokenizer->remaining++, .span_len = 1, .type = QUOTE};
+                return LT_SUCCESS;
             case ' ':
                 tokenizer->remaining++;
                 break;
@@ -82,7 +85,7 @@ LineTokenizerResult line_tokenizer_next_token(LineTokenizer *tokenizer, Token *r
     int cur_len = 0;
     while (tokenizer->remaining[cur_len] != ' ' && tokenizer->remaining[cur_len] != 0 &&
            tokenizer->remaining[cur_len] != ',' && tokenizer->remaining[cur_len] != '\n' &&
-           tokenizer->remaining[cur_len] != ';')
+           tokenizer->remaining[cur_len] != ';' && tokenizer->remaining[cur_len] != '"')
         cur_len++;
 
     for (size_t i = 0; i < sizeof(TOKEN_STRS) / sizeof(TOKEN_STRS[0]); i++) {
@@ -228,6 +231,8 @@ char *token_type_string(TokenType token_type) {
             return "END";
         case COMMA:
             return "COMMA";
+        case QUOTE:
+            return "QUOTE";
         case TEXT:
             return "TEXT";
         case PUTS:

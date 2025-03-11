@@ -5,14 +5,16 @@
 #include "assembler/token.h"
 
 int main() {
+    printf("TODO: unescape strings\n");
     const char *lines[] = {
-        ".orig x300000000000",  //
+        ".orig x3000",          //
         "ADD R1, R0, x5432\n",  //
         "NoT R1, R1\n",         //
         "ADD R1, R1, 42069\n",  //
         "\n",                   //
         "; amogus\n",           //
         "BRnzp FLOOF, x1\n",    //
+        ".end"                  //
     };
 
     LineTokensList token_list;
@@ -47,15 +49,7 @@ int main() {
     SymbolTable table;
     SymbolTableResult st_result = generate_symbol_table(&table, &token_list, &lines_read);
     if (st_result != ST_SUCCESS) {
-        printf("Failed at line %lu: \n", lines_read);
-        switch (st_result) {
-            case ST_TOKEN_BEFORE_ORIG:
-                printf("Token before orig.\n");
-                break;
-            case ST_NO_MORE_TOKENS:
-                printf("Ran out of tokens.\n");
-                break;
-        }
+        printf("Failed at line %lu with err %d\n", lines_read, st_result);
         free_tokens_list(&token_list);
         free(table.symbols);
         return 1;

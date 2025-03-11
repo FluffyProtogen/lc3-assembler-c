@@ -27,6 +27,7 @@ typedef enum {
     STRINGZ,
     END,
     COMMA,
+    QUOTE,
     TEXT,
     PUTS,
     HALT,
