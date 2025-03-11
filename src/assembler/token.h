@@ -73,4 +73,6 @@ typedef enum {
 
 LineTokenizerResult tokenize_lines(LineTokensList *list, const char **lines, size_t line_count, size_t *lines_read);
 
+void free_tokens_list(LineTokensList *list);
+
 void debug_token_print(const Token *token);
