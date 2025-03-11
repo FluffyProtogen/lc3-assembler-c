@@ -21,7 +21,12 @@ const struct {
 };
 
 const struct {
-    char *br_string;
+    char *string;
+    TokenType type;
+} PSEUDOOP_STRS[] = {{"ORIG", ORIG}, {"FILL", FILL}, {"BLKW", BLKW}, {"STRINGZ", STRINGZ}, {"END", END}};
+
+const struct {
+    char *string;
     BrFlags br_flags;
 } BR_STRS[] = {
     {"BR", {.n = true, .z = true, .p = true}},
@@ -81,27 +86,34 @@ LineTokenizerResult line_tokenizer_next_token(LineTokenizer *tokenizer, Token *r
         cur_len++;
 
     for (size_t i = 0; i < sizeof(TOKEN_STRS) / sizeof(TOKEN_STRS[0]); i++) {
-        char *token_string = TOKEN_STRS[i].string;
-        TokenType token_type = TOKEN_STRS[i].type;
-        if (strncasecmp(tokenizer->remaining, token_string, cur_len) == 0) {
-            *result = (Token){.span_start = tokenizer->remaining, .span_len = cur_len, .type = token_type};
+        if (strncasecmp(tokenizer->remaining, TOKEN_STRS[i].string, cur_len) == 0) {
+            *result = (Token){.span_start = tokenizer->remaining, .span_len = cur_len, .type = TOKEN_STRS[i].type};
             tokenizer->remaining += cur_len;
             return LT_SUCCESS;
         }
     }
 
     for (size_t i = 0; i < sizeof(BR_STRS) / sizeof(BR_STRS[0]); i++) {
-        if (strncasecmp(tokenizer->remaining, BR_STRS[i].br_string, cur_len) == 0) {
+        if (strncasecmp(tokenizer->remaining, BR_STRS[i].string, cur_len) == 0) {
             BrFlags flags = BR_STRS[i].br_flags;
             *result = (Token){
-                .span_start = tokenizer->remaining,
-                .span_len = cur_len,
-                .type = BR,
-                .data = {.br_flags = flags},
-            };
+                .span_start = tokenizer->remaining, .span_len = cur_len, .type = BR, .data = {.br_flags = flags}};
             tokenizer->remaining += cur_len;
             return LT_SUCCESS;
         }
+    }
+
+    // if text starts with ., it must be a pseudoop
+    if (tokenizer->remaining[0] == '.') {
+        for (size_t i = 0; i < sizeof(PSEUDOOP_STRS) / sizeof(PSEUDOOP_STRS[0]); i++) {
+            if (strncasecmp(tokenizer->remaining + 1, PSEUDOOP_STRS[i].string, cur_len - 1) == 0) {
+                *result =
+                    (Token){.span_start = tokenizer->remaining, .span_len = cur_len, .type = PSEUDOOP_STRS[i].type};
+                tokenizer->remaining += cur_len;
+                return LT_SUCCESS;
+            }
+        }
+        return LT_BAD_PSEUDOOP;
     }
 
     // if text starts with an R and is of length
@@ -142,36 +154,33 @@ LineTokenizerResult line_tokenizer_next_token(LineTokenizer *tokenizer, Token *r
     return LT_SUCCESS;
 }
 
-LineTokenizerResult tokenize_lines(LineTokenList *list, const char **lines, size_t line_count, size_t *lines_read) {
-    // *lines_read = 0;
-    // line_tokens->len = 0;
-    // line_tokens->cap = 50;
-    // line_tokens->line_tokens = malloc(sizeof(LineToken) * line_tokens->cap);
-    // for (size_t i = 0; i < line_count; i++) {
-    //     (*lines_read)++;
-    //     LineTokenizer tokenizer = {.remaining = lines[i]};
-    //
-    //     LineTokenizerResult result;
-    //     Token token;
-    //     while ((result = line_tokenizer_next_token(&tokenizer, &token)) == SUCCESS) {
-    //         if (line_tokens->len == line_tokens->cap) {
-    //             line_tokens->cap *= 2;
-    //             line_tokens->line_tokens = realloc(line_tokens->line_tokens, sizeof(LineToken) * line_tokens->cap);
-    //         }
-    //         line_tokens->line_tokens[line_tokens->len++] = (LineToken){.token = token, .line = *lines_read};
-    //     }
-    //
-    //     switch (result) {
-    //         case SUCCESS:
-    //         case NO_MORE_TOKENS:
-    //             break;
-    //         case INVALID_INTEGER:
-    //             return INVALID_INTEGER;
-    //         case INTEGER_TOO_LARGE:
-    //             return INTEGER_TOO_LARGE;
-    //     }
-    // }
-    // return SUCCESS;
+LineTokenizerResult tokenize_lines(LineTokensList *list, const char **lines, size_t line_count, size_t *lines_read) {
+    *lines_read = 0;
+    list->len = 0;
+    size_t list_cap = 5;
+    list->line_tokens = malloc(sizeof(LineTokens) * list_cap);
+    for (size_t i = 0; i < line_count; i++) {
+        (*lines_read)++;
+        size_t line_tokens_cap = 5;
+        LineTokens line_tokens = {.tokens = malloc(sizeof(Token) * line_tokens_cap), .line = *lines_read, .len = 0};
+        LineTokenizer tokenizer = {.remaining = lines[i]};
+        LineTokenizerResult result;
+        Token token;
+        while ((result = line_tokenizer_next_token(&tokenizer, &token)) == LT_SUCCESS) {
+            if (line_tokens.len == line_tokens_cap)
+                line_tokens.tokens = realloc(line_tokens.tokens, sizeof(Token) * (line_tokens_cap *= 2));
+            line_tokens.tokens[line_tokens.len++] = token;
+        }
+
+        // propagate the failure up
+        if (result != LT_SUCCESS && result != LT_NO_MORE_TOKENS)
+            return result;
+
+        if (list->len == list_cap)
+            list->line_tokens = realloc(list->line_tokens, sizeof(LineTokens) * (list_cap *= 2));
+        list->line_tokens[list->len++] = line_tokens;
+    }
+    return LT_SUCCESS;
 }
 
 char *token_type_string(TokenType token_type) {

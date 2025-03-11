@@ -1,2 +1,2 @@
 #!/bin/bash
-gcc -g -o main main.c token.c -Wall -Wextra && ./main
+gcc -g -o main src/main.c src/assembler/*.c -Wall -Wextra && ./main
