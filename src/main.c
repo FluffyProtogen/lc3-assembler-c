@@ -7,14 +7,19 @@
 int main() {
     printf("TODO: unescape strings\n");
     const char *lines[] = {
-        ".orig x3000",          //
-        "ADD R1, R0, x5432\n",  //
-        "NoT R1, R1\n",         //
-        "ADD R1, R1, 42069\n",  //
-        "\n",                   //
-        "; amogus\n",           //
-        "BRnzp FLOOF, x1\n",    //
-        ".end"                  //
+        ".orig x3000",             //
+        "ADD R1, R0, x5432\n",     //
+        "NoT R1, R1\n",            //
+        "ADD R1, R1, 42069\n",     //
+        "\n",                      //
+        "; amogus\n",              //
+        "FLUF BRnzp FLOOF, x1\n",  //
+        ".blkw 3",                 //
+        "FLOOF ADD\n",             //
+        ".end",                    //
+        ".orig x4000",             //
+        "FLuFfy ADD R1, R1, R1",   //
+        ".end",
     };
 
     LineTokensList token_list;
@@ -51,10 +56,13 @@ int main() {
     if (st_result != ST_SUCCESS) {
         printf("Failed at line %lu with err %d\n", lines_read, st_result);
         free_tokens_list(&token_list);
-        free(table.symbols);
+        free_symbol_table(&table);
         return 1;
     }
 
+    for (size_t i = 0; i < table.len; i++)
+        printf("symbol: %s  addr: %x\n", table.symbols[i].symbol, table.symbols[i].addr);
+
     free_tokens_list(&token_list);
-    free(table.symbols);
+    free_symbol_table(&table);
 }

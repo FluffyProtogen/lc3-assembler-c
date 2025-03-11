@@ -1,10 +1,9 @@
 #include <stdint.h>
 #include "token.h"
 
-// has the lifetime of the tokens used to create it
 typedef struct {
     struct {
-        char *symbol;
+        const char *symbol;
         int32_t addr;
     } *symbols;
     size_t len;
@@ -24,6 +23,9 @@ typedef enum {
     ST_TRAILING_TOKENS,
     ST_ORIG_INSIDE_ORIG,
     ST_NO_END,
+    ST_SYMBOL_ALREADY_EXISTS,
 } SymbolTableResult;
 
 SymbolTableResult generate_symbol_table(SymbolTable *table, const LineTokensList *line_tokens, size_t *lines_read);
+
+void free_symbol_table(SymbolTable *table);

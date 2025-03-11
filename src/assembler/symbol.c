@@ -2,19 +2,32 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <strings.h>
 
 #include "symbol.h"
 #include "token.h"
 
-void symbol_table_add_symbol(SymbolTable *table, int32_t cur_address) {
+SymbolTableResult add_symbol(SymbolTable *table, size_t *table_cap, const char *symbol, int32_t cur_address) {
+    for (size_t i = 0; i < table->len; i++) {
+        if (strcasecmp(table->symbols[i].symbol, symbol) == 0)
+            return ST_SYMBOL_ALREADY_EXISTS;
+    }
+
+    if (table->len == *table_cap)
+        table->symbols = realloc(table->symbols, sizeof(*table->symbols) * (*table_cap *= 2));
+    table->symbols[table->len].symbol = symbol;
+    table->symbols[table->len++].addr = cur_address;
+
+    return ST_SUCCESS;
 }
 
 SymbolTableResult generate_symbol_table(SymbolTable *table, const LineTokensList *token_list, size_t *lines_read) {
     *lines_read = 0;
     int32_t next_address = -1;
-    size_t symbol_cap = 5;
+    size_t table_cap = 5;
     table->len = 0;
-    table->symbols = malloc(sizeof(*table->symbols) * symbol_cap);
+    table->symbols = malloc(sizeof(*table->symbols) * table_cap);
 
     for (size_t line = 0; line < token_list->len; line++) {
         (*lines_read)++;
@@ -38,8 +51,12 @@ SymbolTableResult generate_symbol_table(SymbolTable *table, const LineTokensList
             }
 
             switch (token->type) {
-                case TEXT:
-                    symbol_table_add_symbol(table, next_address - 1);
+                case TEXT:;
+                    char *symbol = strndup(token->span_start, token->span_len);
+                    if (add_symbol(table, &table_cap, symbol, next_address) != ST_SUCCESS) {
+                        free(symbol);
+                        return ST_SYMBOL_ALREADY_EXISTS;
+                    }
                     break;
                 case ORIG:
                     return ST_ORIG_INSIDE_ORIG;
@@ -66,4 +83,10 @@ SymbolTableResult generate_symbol_table(SymbolTable *table, const LineTokensList
         return ST_NO_END;
 
     return ST_SUCCESS;
+}
+
+void free_symbol_table(SymbolTable *table) {
+    for (size_t i = 0; i < table->len; i++)
+        free(table->symbols[i].symbol);
+    free(table->symbols);
 }
