@@ -24,6 +24,7 @@ UnescapeResult unescape_string(const char *input, size_t input_len, char **outpu
 
     *output = malloc(len + 1);
     *output_len = len;
+    printf("len: %lu, output %p\n", len, output);
     len = 0;
     for (size_t i = 0; i < input_len; i++) {
         if (input[len] == '\\') {
@@ -40,12 +41,11 @@ UnescapeResult unescape_string(const char *input, size_t input_len, char **outpu
                     printf("Unreachable unescape");
                     exit(1);
             }
-            *output[len++] = escape;
-        } else {
-            *output[len++] = input[i];
-        }
+            (*output)[len++] = escape;
+        } else
+            (*output)[len++] = input[i];
     }
-    output[len + 1] = 0;
+    (*output)[len] = 0;
 
     return US_ALLOC;
 }

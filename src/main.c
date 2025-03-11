@@ -5,7 +5,6 @@
 #include "assembler/token.h"
 
 int main() {
-    printf("TODO: unescape strings\n");
     const char *lines[] = {
         ".orig x3000",                   //
         "ADD R1, R0, x5432\n",           //
@@ -19,7 +18,7 @@ int main() {
         ".end",                          //
         ".orig x4000",                   //
         "FLuFfy AMOgus ADD R1, R1, R1",  //
-        "OwO .stringz \"hi\"",
+        "owo .stringz \"hi\\n\"",
         "MantledBeast LEA R2, 0\n",
         ".end",
     };
@@ -49,7 +48,7 @@ int main() {
     printf("Successfully parsed %lu lines:\n", lines_read);
     for (size_t line = 0; line < token_list.len; line++) {
         printf("LINE %lu\n", line);
-        for (int i = 0; i < token_list.line_tokens[line].len; i++)
+        for (size_t i = 0; i < token_list.line_tokens[line].len; i++)
             debug_token_print(&token_list.line_tokens[line].tokens[i]);
     }
 
