@@ -5,10 +5,11 @@
 #include <string.h>
 #include <strings.h>
 
+#include "../utils.h"
 #include "symbol.h"
 #include "token.h"
 
-SymbolTableResult add_symbol(SymbolTable *table, size_t *table_cap, const char *symbol, int32_t cur_address) {
+SymbolTableResult add_symbol(SymbolTable *table, size_t *table_cap, char *symbol, int32_t cur_address) {
     for (size_t i = 0; i < table->len; i++) {
         if (strcasecmp(table->symbols[i].symbol, symbol) == 0)
             return ST_SYMBOL_ALREADY_EXISTS;
@@ -62,6 +63,29 @@ SymbolTableResult generate_symbol_table(SymbolTable *table, const LineTokensList
                     return ST_ORIG_INSIDE_ORIG;
                 case END:
                     next_address = -1;
+                    goto continue_lines;
+                case STRINGZ:
+                    token = &line_tokens->tokens[++i];
+                    if (token->type != QUOTE)
+                        return ST_BAD_STRINGZ;
+                    token = &line_tokens->tokens[++i];
+                    if (token->type != TEXT)
+                        return ST_BAD_STRINGZ;
+
+                    char *unescaped;
+                    size_t output_len;
+                    UnescapeResult result =
+                        unescape_string(token->span_start, token->span_len, &unescaped, &output_len);
+                    if (result == US_INVALID_ESCAPE)
+                        return ST_BAD_STRING_ESCAPE;
+                    size_t len = (result == US_ALLOC) ? output_len : token->span_len;
+                    next_address += len + 1;  // + 1 from null terminator
+                    if (result == US_ALLOC)
+                        free(unescaped);
+
+                    token = &line_tokens->tokens[++i];
+                    if (token->type != QUOTE)
+                        return ST_BAD_STRINGZ;
                     goto continue_lines;
                 case BLKW:
                     token = &line_tokens->tokens[++i];

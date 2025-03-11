@@ -3,7 +3,7 @@
 
 typedef struct {
     struct {
-        const char *symbol;
+        char *symbol;
         int32_t addr;
     } *symbols;
     size_t len;
@@ -20,6 +20,7 @@ typedef enum {
     ST_NO_BLKW_AMOUNT,
     ST_BAD_BLKW_AMOUNT,
     ST_BAD_STRINGZ,
+    ST_BAD_STRING_ESCAPE,
     ST_TRAILING_TOKENS,
     ST_ORIG_INSIDE_ORIG,
     ST_NO_END,

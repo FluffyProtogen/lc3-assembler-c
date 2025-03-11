@@ -7,18 +7,20 @@
 int main() {
     printf("TODO: unescape strings\n");
     const char *lines[] = {
-        ".orig x3000",             //
-        "ADD R1, R0, x5432\n",     //
-        "NoT R1, R1\n",            //
-        "ADD R1, R1, 42069\n",     //
-        "\n",                      //
-        "; amogus\n",              //
-        "FLUF BRnzp FLOOF, x1\n",  //
-        ".blkw 3",                 //
-        "FLOOF ADD\n",             //
-        ".end",                    //
-        ".orig x4000",             //
-        "FLuFfy ADD R1, R1, R1",   //
+        ".orig x3000",                   //
+        "ADD R1, R0, x5432\n",           //
+        "NoT R1, R1\n",                  //
+        "ADD R1, R1, 42069\n",           //
+        "\n",                            //
+        "; amogus\n",                    //
+        "FLUF BRnzp FLOOF, x1\n",        //
+        ".blkw 3",                       //
+        "FLOOF ADD\n",                   //
+        ".end",                          //
+        ".orig x4000",                   //
+        "FLuFfy AMOgus ADD R1, R1, R1",  //
+        "OwO .stringz \"hi\"",
+        "MantledBeast LEA R2, 0\n",
         ".end",
     };
 
