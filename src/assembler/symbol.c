@@ -118,3 +118,13 @@ void free_symbol_table(SymbolTable *table) {
         free(table->symbols[i].symbol);
     free(table->symbols);
 }
+
+bool symbol_table_get(const SymbolTable *table, const char *span_start, size_t span_len, int32_t *output) {
+    for (size_t i = 0; i < table->len; i++) {
+        if (strncasecmp(table->symbols[i].symbol, span_start, span_len) == 0) {
+            *output = table->symbols[i].addr;
+            return true;
+        }
+    }
+    return false;
+}

@@ -1,8 +1,10 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "../utils.h"
 #include "parser.h"
+#include "symbol.h"
 #include "token.h"
 
 #define ADVANCE_TOKEN                      \
@@ -20,6 +22,23 @@
         if (token->type != t_type)         \
             return PS_BAD_TOKEN;           \
     } while (0)
+
+#define EXPECT_CALC_OFFSET                                                                         \
+    do {                                                                                           \
+        if (i + 1 >= line_tokens->len)                                                             \
+            return PS_NO_MORE_TOKENS;                                                              \
+        token = &line_tokens->tokens[++i];                                                         \
+        if (token->type == NUMBER)                                                                 \
+            calc_offset = token->data.number;                                                      \
+        else if (token->type == TEXT) {                                                            \
+            if (!symbol_table_get(symbol_table, token->span_start, token->span_len, &calc_offset)) \
+                return PS_SYMBOL_NOT_PRESENT;                                                      \
+            calc_offset -= next_address;                                                           \
+        } else                                                                                     \
+            return PS_BAD_TOKEN;                                                                   \
+    } while (0)
+
+// bool symbol_table_get(const SymbolTable *table, char *span_start, size_t span_len, int32_t *output) {
 
 void add_instruction(Instructions *instrs, size_t *instrs_cap, Instruction instr) {
     if (instrs->len == *instrs_cap)
@@ -54,10 +73,23 @@ ParserResult parse_instructions(Instructions *instrs,
                 next_address = token->data.number;
                 if (i + 1 < line_tokens->len)
                     return PS_TRAILING_TOKENS;
+                PUSH_INSTR(((Instruction){.type = INSTR_ORIG, .data.u16 = token->data.number}));
                 goto continue_lines;
             }
 
+            switch (token->type) {
+                case TEXT:
+                case BLKW:
+                case STRINGZ:
+                case ORIG:
+                case END:
+                    break;
+                default:
+                    next_address++;
+            }
+
             Instruction temp_instr;
+            int32_t calc_offset;
             switch (token->type) {
                 case TEXT:
                     continue;
@@ -101,12 +133,10 @@ ParserResult parse_instructions(Instructions *instrs,
                     if (token->type == REGISTER) {
                         temp_instr.type = INSTR_ADD;
                         temp_instr.data.sr2 = token->data.reg;
-                        goto continue_lines;
                     } else if (token->type == NUMBER) {
                         temp_instr.type = INSTR_ADD_IMM;
                         if (!fit_to_bits(token->data.number, 5, &temp_instr.data.imm))
                             return PS_NUMBER_TOO_LARGE;
-                        goto continue_lines;
                     } else {
                         return PS_BAD_TOKEN;
                     }
@@ -124,71 +154,27 @@ ParserResult parse_instructions(Instructions *instrs,
                     if (token->type == REGISTER) {
                         temp_instr.type = INSTR_AND;
                         temp_instr.data.sr2 = token->data.reg;
-                        goto continue_lines;
                     } else if (token->type == NUMBER) {
                         temp_instr.type = INSTR_AND_IMM;
                         if (!fit_to_bits(token->data.number, 5, &temp_instr.data.imm))
                             return PS_NUMBER_TOO_LARGE;
-                        goto continue_lines;
                     } else {
                         return PS_BAD_TOKEN;
                     }
                     PUSH_INSTR(temp_instr);
                     goto continue_lines;
-                // case BR:
-                //     EXPECT_TOKEN()
                 default:
                     goto continue_lines;
+                case BR:
+                    temp_instr = (Instruction){.type = INSTR_BR, .data.br_flags = token->data.br_flags};
+                    EXPECT_CALC_OFFSET;
+                    printf("offset:%d\n", calc_offset);
+                    if (!fit_to_bits(calc_offset, 9, &temp_instr.data.offset))
+                        return PS_NUMBER_TOO_LARGE;
+                    PUSH_INSTR(temp_instr);
+                    printf("offset:%d\n", temp_instr.data.offset);
+                    goto continue_lines;
             }
-
-            // switch (token->type) {
-            // case TEXT:;
-            //     char *symbol = strndup(token->span_start, token->span_len);
-            //     if (add_symbol(table, &table_cap, symbol, next_address) != ST_SUCCESS) {
-            //         free(symbol);
-            //         return ST_SYMBOL_ALREADY_EXISTS;
-            //     }
-            //     break;
-            // case ORIG:
-            //     return ST_ORIG_INSIDE_ORIG;
-            // case END:
-            //     next_address = -1;
-            //     goto continue_lines;
-            // case STRINGZ:
-            //     token = &line_tokens->tokens[++i];
-            //     if (token->type != QUOTE)
-            //         return ST_BAD_STRINGZ;
-            //     token = &line_tokens->tokens[++i];
-            //     if (token->type != TEXT)
-            //         return ST_BAD_STRINGZ;
-            //
-            //     char *unescaped;
-            //     size_t output_len;
-            //     UnescapeResult result =
-            //         unescape_string(token->span_start, token->span_len, &unescaped, &output_len);
-            //     if (result == US_INVALID_ESCAPE)
-            //         return ST_BAD_STRING_ESCAPE;
-            //     size_t len = (result == US_ALLOC) ? output_len : token->span_len;
-            //     next_address += len + 1;  // + 1 from null terminator
-            //     if (result == US_ALLOC)
-            //         free(unescaped);
-            //
-            //     token = &line_tokens->tokens[++i];
-            //     if (token->type != QUOTE)
-            //         return ST_BAD_STRINGZ;
-            //     goto continue_lines;
-            // case BLKW:
-            //     token = &line_tokens->tokens[++i];
-            //     if (token->type != NUMBER)
-            //         return ST_NO_BLKW_AMOUNT;
-            //     if (token->data.number <= 0)
-            //         return ST_BAD_BLKW_AMOUNT;
-            //     next_address += token->data.number;
-            //     goto continue_lines;
-            // default:
-            //     next_address++;
-            //     goto continue_lines;
-            // }
         }
     continue_lines:
         if (i + 1 < line_tokens->len)

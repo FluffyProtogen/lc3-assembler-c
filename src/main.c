@@ -8,22 +8,30 @@
 int main() {
     printf("TODO: check for overlapping memory from origs\n");
     int ret = 0;
+    // const char *lines[] = {
+    //     ".orig x3000",                      //
+    //     "ADD R1, R0, -16\n",                //
+    //     "NoT R1, R1\n",                     //
+    //     "ADD R1, R1, 42069\n",              //
+    //     "\n",                               //
+    //     "; amogus\n",                       //
+    //     "FLUF BRnzp FLOOF, x1\n",           //
+    //     ".blkw 3",                          //
+    //     "FLOOF ADD\n",                      //
+    //     ".end",                             //
+    //     ".orig x4000",                      //
+    //     "AMOgus ADD R1, R1, R1",            //
+    //     "owo .stringz \"hi\\n\"",           //
+    //     "Fluffy MantledBeast LEA R2, 0\n",  //
+    //     ".end",                             //
+    // };
+
     const char *lines[] = {
-        ".orig x3000",             //
-        "ADD R1, R0, -16\n",       //
-        "NoT R1, R1\n",            //
-        "ADD R1, R1, 42069\n",     //
-        "\n",                      //
-        "; amogus\n",              //
-        "FLUF BRnzp FLOOF, x1\n",  //
-        ".blkw 3",                 //
-        "FLOOF ADD\n",             //
-        ".end",                    //
-        ".orig x4000",             //
-        "AMOgus ADD R1, R1, R1",   //
-        "owo .stringz \"hi\\n\"",
-        "Fluffy MantledBeast LEA R2, 0\n",
-        ".end",
+        ".orig x3000",            //
+        "AND R0, R0, 0",          //
+        "amogus ADD R0, R0, 15",  //
+        "ADD R1, R0, R0",         //
+        ".end",                   //
     };
 
     LineTokensList token_list;
@@ -73,6 +81,10 @@ int main() {
         ret = 1;
         goto free_instructions;
     }
+
+    printf("\n--Instructions len: %lu--\n", instructions.len);
+    for (size_t i = 0; i < instructions.len; i++)
+        printf("instruction: %d\n", instructions.instructions[i].type);
 
 free_instructions:
     free(instructions.instructions);

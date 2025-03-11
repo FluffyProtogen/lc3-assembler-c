@@ -1,6 +1,8 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
+
 #include "token.h"
 
 typedef struct {
@@ -31,3 +33,5 @@ typedef enum {
 SymbolTableResult generate_symbol_table(SymbolTable *table, const LineTokensList *line_tokens, size_t *lines_read);
 
 void free_symbol_table(SymbolTable *table);
+
+bool symbol_table_get(const SymbolTable *table, const char *span_start, size_t span_len, int32_t *output);
