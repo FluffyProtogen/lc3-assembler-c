@@ -54,6 +54,18 @@ LineTokenizerResult parse_int(const char *text, size_t cur_len, int32_t *output)
     return LT_SUCCESS;
 }
 
+bool is_number(const char *text) {
+    if (text[0] >= '0' && text[0] <= '9' || text[0] == '-')
+        return true;
+    if (toupper(text[0]) == 'X') {
+        if (text[1] >= '0' && text[1] <= '9')
+            return true;
+        if (toupper(text[1]) >= 'A' && toupper(text[1]) <= 'F')
+            return true;
+    }
+    return false;
+}
+
 LineTokenizerResult line_tokenizer_next_token(LineTokenizer *tokenizer, Token *result) {
     // first, keep eating characters until either reaching a non-whitespace or comma
     bool found = false;
@@ -134,8 +146,7 @@ LineTokenizerResult line_tokenizer_next_token(LineTokenizer *tokenizer, Token *r
     }
 
     // if text starts with a number, minus sign, or x, attempt to parse it and return an error if it fails
-    if (((tokenizer->remaining[0] >= '0' && tokenizer->remaining[0] <= '9') || tokenizer->remaining[0] == '-') ||
-        (tokenizer->remaining[0] == 'x' && (tokenizer->remaining[1] >= '0' && tokenizer->remaining[1] <= '9'))) {
+    if (is_number(tokenizer->remaining)) {
         int32_t num;
         LineTokenizerResult err;
         if ((err = parse_int(tokenizer->remaining, cur_len, &num)) != LT_SUCCESS)

@@ -69,7 +69,8 @@ typedef enum {
     PS_BAD_STRING_ESCAPE,
     PS_TRAILING_TOKENS,
     PS_NUMBER_TOO_LARGE,
-    PS_SYMBOL_NOT_PRESENT
+    PS_SYMBOL_NOT_PRESENT,
+    PS_OVERFLOWING_ADDR,
 } ParserResult;
 
 ParserResult parse_instructions(Instructions *instructions,

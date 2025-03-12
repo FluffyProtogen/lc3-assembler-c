@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,20 +15,16 @@
         token = &line_tokens->tokens[++i]; \
     } while (0)
 
-#define EXPECT_TOKEN(t_type)               \
-    do {                                   \
-        if (i + 1 >= line_tokens->len)     \
-            return PS_NO_MORE_TOKENS;      \
-        token = &line_tokens->tokens[++i]; \
-        if (token->type != t_type)         \
-            return PS_BAD_TOKEN;           \
+#define EXPECT_TOKEN(t_type)       \
+    do {                           \
+        ADVANCE_TOKEN;             \
+        if (token->type != t_type) \
+            return PS_BAD_TOKEN;   \
     } while (0)
 
 #define EXPECT_CALC_OFFSET(bits)                                                                   \
     do {                                                                                           \
-        if (i + 1 >= line_tokens->len)                                                             \
-            return PS_NO_MORE_TOKENS;                                                              \
-        token = &line_tokens->tokens[++i];                                                         \
+        ADVANCE_TOKEN;                                                                             \
         if (token->type == NUMBER)                                                                 \
             calc_offset = token->data.number;                                                      \
         else if (token->type == TEXT) {                                                            \
@@ -243,7 +240,7 @@ ParserResult parse_instructions(Instructions *instrs,
                     PUSH_CONTINUE(temp_instr);
                 case TRAP:
                     EXPECT_TOKEN(NUMBER);
-                    if (token->data.number < 0 || token->data.number > (1 << 8))
+                    if (token->data.number < 0 || token->data.number > 0xFF)
                         return PS_NUMBER_TOO_LARGE;
                     PUSH_CONTINUE(((Instruction){.type = INSTR_TRAP, .data.u16 = token->data.number}));
                 case GETC:
@@ -256,6 +253,19 @@ ParserResult parse_instructions(Instructions *instrs,
                     PUSH_CONTINUE(((Instruction){.type = INSTR_TRAP, .data.u16 = 0x23}));
                 case HALT:
                     PUSH_CONTINUE(((Instruction){.type = INSTR_TRAP, .data.u16 = 0x25}));
+                case FILL:
+                    temp_instr = (Instruction){.type = INSTR_FILL};
+                    ADVANCE_TOKEN;
+                    if (token->type == NUMBER) {
+                        // tokenizer guarantees ints are within a 16 bit range
+                        temp_instr.data.u16 = token->data.number;
+                    } else if (token->type == TEXT) {
+                        if (!symbol_table_get(symbol_table, token->span_start, token->span_len, &calc_offset))
+                            return PS_SYMBOL_NOT_PRESENT;
+                        temp_instr.data.u16 = calc_offset;
+                    } else
+                        return PS_BAD_TOKEN;
+                    PUSH_CONTINUE(temp_instr);
                 default:
                     return PS_BAD_TOKEN;
             }
@@ -263,6 +273,8 @@ ParserResult parse_instructions(Instructions *instrs,
     continue_lines:
         if (i + 1 < line_tokens->len)
             return PS_TRAILING_TOKENS;
+        if (next_address > USHRT_MAX)
+            return PS_OVERFLOWING_ADDR;
     }
 
     return PS_SUCCESS;
