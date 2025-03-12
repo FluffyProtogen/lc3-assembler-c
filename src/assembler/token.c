@@ -247,6 +247,12 @@ char *token_type_string(TokenType token_type) {
             return "NUMBER";
         case REGISTER:
             return "REGISTER";
+        case GETC:
+            return "GETC";
+        case IN:
+            return "IN";
+        case OUT:
+            return "OUT";
     }
     return "UNREACHABLE";
 }

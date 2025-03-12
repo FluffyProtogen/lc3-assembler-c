@@ -8,31 +8,30 @@
 int main() {
     printf("TODO: check for overlapping memory from origs\n");
     int ret = 0;
-    // const char *lines[] = {
-    //     ".orig x3000",                      //
-    //     "ADD R1, R0, -16\n",                //
-    //     "NoT R1, R1\n",                     //
-    //     "ADD R1, R1, 42069\n",              //
-    //     "\n",                               //
-    //     "; amogus\n",                       //
-    //     "FLUF BRnzp FLOOF, x1\n",           //
-    //     ".blkw 3",                          //
-    //     "FLOOF ADD\n",                      //
-    //     ".end",                             //
-    //     ".orig x4000",                      //
-    //     "AMOgus ADD R1, R1, R1",            //
-    //     "owo .stringz \"hi\\n\"",           //
-    //     "Fluffy MantledBeast LEA R2, 0\n",  //
-    //     ".end",                             //
-    // };
-
     const char *lines[] = {
-        ".orig x3000",            //
-        "AND R0, R0, 0",          //
-        "amogus ADD R0, R0, 15",  //
-        "ADD R1, R0, R0",         //
-        ".end",                   //
+        ".orig x3000",                      //
+        "ADD R1, R0, -16\n",                //
+        "NoT R1, R1\n",                     //
+        "ADD R1, R1, 4\n",                  //
+        "\n",                               //
+        "; amogus\n",                       //
+        "FLUF BRnzp AMOGUS\n",              //
+        ".blkw 3",                          //
+        ".end",                             //
+        ".orig x3103",                      //
+        "AMOgus ADD R1, R1, R1",            //
+        "owo .stringz \"hi\\n\"",           //
+        "Fluffy MantledBeast LEA R2, 0\n",  //
+        ".end",                             //
     };
+
+    // const char *lines[] = {
+    //     ".orig x3000",            //
+    //     "AND R0, R0, 0",          //
+    //     "amogus ADD R0, R0, 15",  //
+    //     "ADD R1, R0, R0",         //
+    //     ".end",                   //
+    // };
 
     LineTokensList token_list;
     size_t lines_read;
@@ -71,7 +70,7 @@ int main() {
         goto free_symbols;
     }
 
-    for (size_t i = 0; i < symbol_table.len; i++)
+    for (size_t i = 0; i < symbol_table.sym_len; i++)
         printf("symbol: %s  addr: %x\n", symbol_table.symbols[i].symbol, symbol_table.symbols[i].addr);
 
     Instructions instructions;

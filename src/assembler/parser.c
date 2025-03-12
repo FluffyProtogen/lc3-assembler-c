@@ -238,7 +238,7 @@ ParserResult parse_instructions(Instructions *instrs,
                     temp_instr.data.sr1 = token->data.reg;
                     EXPECT_TOKEN(COMMA);
                     EXPECT_TOKEN(REGISTER);
-                    temp_instr.data.dr = token->data.reg;
+                    temp_instr.data.base_r = token->data.reg;
                     EXPECT_CALC_OFFSET(6);
                     PUSH_CONTINUE(temp_instr);
                 case TRAP:
@@ -256,6 +256,8 @@ ParserResult parse_instructions(Instructions *instrs,
                     PUSH_CONTINUE(((Instruction){.type = INSTR_TRAP, .data.u16 = 0x23}));
                 case HALT:
                     PUSH_CONTINUE(((Instruction){.type = INSTR_TRAP, .data.u16 = 0x25}));
+                default:
+                    return PS_BAD_TOKEN;
             }
         }
     continue_lines:

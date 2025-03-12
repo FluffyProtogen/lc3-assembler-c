@@ -17,25 +17,36 @@
     } while (0)
 
 SymbolTableResult add_symbol(SymbolTable *table, size_t *table_cap, char *symbol, int32_t cur_address) {
-    for (size_t i = 0; i < table->len; i++) {
+    for (size_t i = 0; i < table->sym_len; i++) {
         if (strcasecmp(table->symbols[i].symbol, symbol) == 0)
             return ST_SYMBOL_ALREADY_EXISTS;
     }
 
-    if (table->len == *table_cap)
+    if (table->sym_len == *table_cap)
         table->symbols = realloc(table->symbols, sizeof(*table->symbols) * (*table_cap *= 2));
-    table->symbols[table->len].symbol = symbol;
-    table->symbols[table->len++].addr = cur_address;
+    table->symbols[table->sym_len].symbol = symbol;
+    table->symbols[table->sym_len++].addr = cur_address;
 
     return ST_SUCCESS;
+}
+
+bool addr_spans_contains_addr(const SymbolTable *table, int32_t addr) {
+    // don't need to check the current table addr spans since it's not filled out
+    for (size_t i = 0; i < table->addr_len - 1; i++) {
+        if (addr >= table->addr_spans[i].orig_addr && addr <= table->addr_spans[i].end_addr)
+            return true;
+    }
+    return false;
 }
 
 SymbolTableResult generate_symbol_table(SymbolTable *table, const LineTokensList *token_list, size_t *lines_read) {
     *lines_read = 0;
     int32_t next_address = -1;
-    size_t table_cap = 5;
-    table->len = 0;
+    size_t table_cap = 5, addr_cap = 5;
+    table->sym_len = 0;
+    table->addr_len = 0;
     table->symbols = malloc(sizeof(*table->symbols) * table_cap);
+    table->addr_spans = malloc(sizeof(*table->addr_spans) * addr_cap);
 
     for (size_t line = 0; line < token_list->len; line++) {
         (*lines_read)++;
@@ -52,8 +63,14 @@ SymbolTableResult generate_symbol_table(SymbolTable *table, const LineTokensList
                     return ST_NEGATIVE_ORIG;
 
                 next_address = token->data.number;
+                if (table->addr_len == addr_cap)
+                    table->addr_spans = realloc(table->addr_spans, sizeof(*table->addr_spans) * (addr_cap *= 2));
+                table->addr_spans[table->addr_len++].orig_addr = next_address;
                 goto continue_lines;
             }
+
+            if (addr_spans_contains_addr(table, next_address))
+                return ST_OVERLAPPING_MEM;
 
             switch (token->type) {
                 case TEXT:;
@@ -66,6 +83,7 @@ SymbolTableResult generate_symbol_table(SymbolTable *table, const LineTokensList
                 case ORIG:
                     return ST_ORIG_INSIDE_ORIG;
                 case END:
+                    table->addr_spans[table->addr_len - 1].end_addr = next_address - 1;
                     next_address = -1;
                     goto continue_lines;
                 case STRINGZ:
@@ -105,6 +123,8 @@ SymbolTableResult generate_symbol_table(SymbolTable *table, const LineTokensList
             }
         }
     continue_lines:;
+        if (addr_spans_contains_addr(table, next_address))
+            return ST_OVERLAPPING_MEM;
     }
 
     if (next_address != -1)
@@ -114,13 +134,14 @@ SymbolTableResult generate_symbol_table(SymbolTable *table, const LineTokensList
 }
 
 void free_symbol_table(SymbolTable *table) {
-    for (size_t i = 0; i < table->len; i++)
+    for (size_t i = 0; i < table->sym_len; i++)
         free(table->symbols[i].symbol);
     free(table->symbols);
+    free(table->addr_spans);
 }
 
 bool symbol_table_get(const SymbolTable *table, const char *span_start, size_t span_len, int32_t *output) {
-    for (size_t i = 0; i < table->len; i++) {
+    for (size_t i = 0; i < table->sym_len; i++) {
         if (strncasecmp(table->symbols[i].symbol, span_start, span_len) == 0) {
             *output = table->symbols[i].addr;
             return true;

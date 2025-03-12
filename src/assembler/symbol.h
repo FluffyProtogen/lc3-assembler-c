@@ -10,7 +10,12 @@ typedef struct {
         char *symbol;
         int32_t addr;
     } *symbols;
-    size_t len;
+    size_t sym_len;
+    struct {
+        int32_t orig_addr;
+        int32_t end_addr;
+    } *addr_spans;
+    size_t addr_len;
 } SymbolTable;
 
 typedef enum {
