@@ -23,7 +23,7 @@
             return PS_BAD_TOKEN;           \
     } while (0)
 
-#define EXPECT_CALC_OFFSET                                                                         \
+#define EXPECT_CALC_OFFSET(bits)                                                                   \
     do {                                                                                           \
         if (i + 1 >= line_tokens->len)                                                             \
             return PS_NO_MORE_TOKENS;                                                              \
@@ -36,9 +36,9 @@
             calc_offset -= next_address;                                                           \
         } else                                                                                     \
             return PS_BAD_TOKEN;                                                                   \
+        if (!fit_to_bits(calc_offset, bits, &temp_instr.data.offset))                              \
+            return PS_NUMBER_TOO_LARGE;                                                            \
     } while (0)
-
-// bool symbol_table_get(const SymbolTable *table, char *span_start, size_t span_len, int32_t *output) {
 
 void add_instruction(Instructions *instrs, size_t *instrs_cap, Instruction instr) {
     if (instrs->len == *instrs_cap)
@@ -46,7 +46,11 @@ void add_instruction(Instructions *instrs, size_t *instrs_cap, Instruction instr
     instrs->instructions[instrs->len++] = instr;
 }
 
-#define PUSH_INSTR(i_instr) add_instruction(instrs, &instrs_cap, i_instr);
+#define PUSH_CONTINUE(i_instr)                         \
+    do {                                               \
+        add_instruction(instrs, &instrs_cap, i_instr); \
+        goto continue_lines;                           \
+    } while (0)
 
 ParserResult parse_instructions(Instructions *instrs,
                                 const LineTokensList *token_list,
@@ -73,8 +77,7 @@ ParserResult parse_instructions(Instructions *instrs,
                 next_address = token->data.number;
                 if (i + 1 < line_tokens->len)
                     return PS_TRAILING_TOKENS;
-                PUSH_INSTR(((Instruction){.type = INSTR_ORIG, .data.u16 = token->data.number}));
-                goto continue_lines;
+                PUSH_CONTINUE(((Instruction){.type = INSTR_ORIG, .data.u16 = token->data.number}));
             }
 
             switch (token->type) {
@@ -98,8 +101,7 @@ ParserResult parse_instructions(Instructions *instrs,
                     if (token->data.number <= 0)
                         return PS_BAD_BLKW;
                     next_address += token->data.number;
-                    PUSH_INSTR(((Instruction){.type = INSTR_BLKW, .data = {.u16 = token->data.number}}));
-                    goto continue_lines;
+                    PUSH_CONTINUE(((Instruction){.type = INSTR_BLKW, .data = {.u16 = token->data.number}}));
                 case STRINGZ:
                     EXPECT_TOKEN(QUOTE);
                     EXPECT_TOKEN(TEXT);
@@ -114,13 +116,11 @@ ParserResult parse_instructions(Instructions *instrs,
                     if (result == US_ALLOC)
                         free(unescaped);
                     EXPECT_TOKEN(QUOTE);
-                    PUSH_INSTR(((Instruction){.type = INSTR_STRINGZ,
-                                              .data = {.text = token->span_start, .text_len = token->span_len}}));
-                    goto continue_lines;
+                    PUSH_CONTINUE(((Instruction){.type = INSTR_STRINGZ,
+                                                 .data = {.text = token->span_start, .text_len = token->span_len}}));
                 case END:
                     next_address = -1;
-                    PUSH_INSTR(((Instruction){.type = INSTR_END}))
-                    goto continue_lines;
+                    PUSH_CONTINUE(((Instruction){.type = INSTR_END}));
                 case ADD:
                     temp_instr = (Instruction){};
                     EXPECT_TOKEN(REGISTER);
@@ -140,8 +140,7 @@ ParserResult parse_instructions(Instructions *instrs,
                     } else {
                         return PS_BAD_TOKEN;
                     }
-                    PUSH_INSTR(temp_instr);
-                    goto continue_lines;
+                    PUSH_CONTINUE(temp_instr);
                 case AND:
                     temp_instr = (Instruction){};
                     EXPECT_TOKEN(REGISTER);
@@ -161,19 +160,102 @@ ParserResult parse_instructions(Instructions *instrs,
                     } else {
                         return PS_BAD_TOKEN;
                     }
-                    PUSH_INSTR(temp_instr);
-                    goto continue_lines;
-                default:
-                    goto continue_lines;
+                    PUSH_CONTINUE(temp_instr);
                 case BR:
                     temp_instr = (Instruction){.type = INSTR_BR, .data.br_flags = token->data.br_flags};
-                    EXPECT_CALC_OFFSET;
-                    printf("offset:%d\n", calc_offset);
-                    if (!fit_to_bits(calc_offset, 9, &temp_instr.data.offset))
+                    EXPECT_CALC_OFFSET(9);
+                    PUSH_CONTINUE(temp_instr);
+                case JMP:
+                    EXPECT_TOKEN(REGISTER);
+                    PUSH_CONTINUE(((Instruction){.type = INSTR_JMP, .data.reg = token->data.reg}));
+                case JSR:
+                    temp_instr = (Instruction){.type = INSTR_JSR};
+                    EXPECT_CALC_OFFSET(11);
+                    PUSH_CONTINUE(temp_instr);
+                case JSRR:
+                    EXPECT_TOKEN(REGISTER);
+                    PUSH_CONTINUE(((Instruction){.type = INSTR_JSRR, .data.base_r = token->data.reg}));
+                case LD:
+                    temp_instr = (Instruction){.type = INSTR_LD};
+                    EXPECT_TOKEN(REGISTER);
+                    temp_instr.data.dr = token->data.reg;
+                    EXPECT_TOKEN(COMMA);
+                    EXPECT_CALC_OFFSET(9);
+                    PUSH_CONTINUE(temp_instr);
+                case LDI:
+                    temp_instr = (Instruction){.type = INSTR_LDI};
+                    EXPECT_TOKEN(REGISTER);
+                    temp_instr.data.dr = token->data.reg;
+                    EXPECT_TOKEN(COMMA);
+                    EXPECT_CALC_OFFSET(9);
+                    PUSH_CONTINUE(temp_instr);
+                case LDR:
+                    temp_instr = (Instruction){.type = INSTR_LDR};
+                    EXPECT_TOKEN(REGISTER);
+                    temp_instr.data.dr = token->data.reg;
+                    EXPECT_TOKEN(COMMA);
+                    EXPECT_TOKEN(REGISTER);
+                    temp_instr.data.base_r = token->data.reg;
+                    EXPECT_TOKEN(COMMA);
+                    EXPECT_CALC_OFFSET(6);
+                    PUSH_CONTINUE(temp_instr);
+                case LEA:
+                    temp_instr = (Instruction){.type = INSTR_LEA};
+                    EXPECT_TOKEN(REGISTER);
+                    temp_instr.data.dr = token->data.reg;
+                    EXPECT_TOKEN(COMMA);
+                    EXPECT_CALC_OFFSET(9);
+                    PUSH_CONTINUE(temp_instr);
+                case NOT:
+                    temp_instr = (Instruction){.type = INSTR_NOT};
+                    EXPECT_TOKEN(REGISTER);
+                    temp_instr.data.dr = token->data.reg;
+                    EXPECT_TOKEN(COMMA);
+                    EXPECT_TOKEN(REGISTER);
+                    temp_instr.data.sr1 = token->data.reg;
+                    PUSH_CONTINUE(temp_instr);
+                case RET:
+                    PUSH_CONTINUE(((Instruction){.type = INSTR_JMP, .data.reg = 7}));
+                case RTI:
+                    PUSH_CONTINUE(((Instruction){.type = INSTR_RTI}));
+                case ST:
+                    temp_instr = (Instruction){.type = INSTR_ST};
+                    EXPECT_TOKEN(REGISTER);
+                    temp_instr.data.sr1 = token->data.reg;
+                    EXPECT_TOKEN(COMMA);
+                    EXPECT_CALC_OFFSET(9);
+                    PUSH_CONTINUE(temp_instr);
+                case STI:
+                    temp_instr = (Instruction){.type = INSTR_STI};
+                    EXPECT_TOKEN(REGISTER);
+                    temp_instr.data.sr1 = token->data.reg;
+                    EXPECT_TOKEN(COMMA);
+                    EXPECT_CALC_OFFSET(9);
+                    PUSH_CONTINUE(temp_instr);
+                case STR:
+                    temp_instr = (Instruction){.type = INSTR_STR};
+                    EXPECT_TOKEN(REGISTER);
+                    temp_instr.data.sr1 = token->data.reg;
+                    EXPECT_TOKEN(COMMA);
+                    EXPECT_TOKEN(REGISTER);
+                    temp_instr.data.dr = token->data.reg;
+                    EXPECT_CALC_OFFSET(6);
+                    PUSH_CONTINUE(temp_instr);
+                case TRAP:
+                    EXPECT_TOKEN(NUMBER);
+                    if (token->data.number < 0 || token->data.number > (1 << 8))
                         return PS_NUMBER_TOO_LARGE;
-                    PUSH_INSTR(temp_instr);
-                    printf("offset:%d\n", temp_instr.data.offset);
-                    goto continue_lines;
+                    PUSH_CONTINUE(((Instruction){.type = INSTR_TRAP, .data.u16 = token->data.number}));
+                case GETC:
+                    PUSH_CONTINUE(((Instruction){.type = INSTR_TRAP, .data.u16 = 0x20}));
+                case OUT:
+                    PUSH_CONTINUE(((Instruction){.type = INSTR_TRAP, .data.u16 = 0x21}));
+                case PUTS:
+                    PUSH_CONTINUE(((Instruction){.type = INSTR_TRAP, .data.u16 = 0x22}));
+                case IN:
+                    PUSH_CONTINUE(((Instruction){.type = INSTR_TRAP, .data.u16 = 0x23}));
+                case HALT:
+                    PUSH_CONTINUE(((Instruction){.type = INSTR_TRAP, .data.u16 = 0x25}));
             }
         }
     continue_lines:

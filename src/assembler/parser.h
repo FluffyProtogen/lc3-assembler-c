@@ -37,12 +37,14 @@ typedef struct {
             uint8_t dr;
             uint8_t sr1;
             uint8_t sr2;
+            uint8_t base_r;
             BrFlags br_flags;
             union {
                 uint16_t offset;
                 uint16_t imm;
             };
         };
+        uint8_t reg;
         uint16_t u16;
         struct {
             const char *text;
