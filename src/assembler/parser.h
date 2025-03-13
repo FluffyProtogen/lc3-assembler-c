@@ -32,12 +32,14 @@ typedef enum {
 
 // has the lifetime of the text used to create it
 typedef struct {
-    union {
+    union InstructionData {
         struct {
             uint8_t dr;
             uint8_t sr1;
-            uint8_t sr2;
-            uint8_t base_r;
+            union {
+                uint8_t sr2;
+                uint8_t base_r;
+            };
             BrFlags br_flags;
             union {
                 uint16_t offset;

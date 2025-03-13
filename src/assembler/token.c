@@ -55,15 +55,9 @@ LineTokenizerResult parse_int(const char *text, size_t cur_len, int32_t *output)
 }
 
 bool is_number(const char *text) {
-    if (text[0] >= '0' && text[0] <= '9' || text[0] == '-')
-        return true;
-    if (toupper(text[0]) == 'X') {
-        if (text[1] >= '0' && text[1] <= '9')
-            return true;
-        if (toupper(text[1]) >= 'A' && toupper(text[1]) <= 'F')
-            return true;
-    }
-    return false;
+    return ((text[0] >= '0' && text[0] <= '9') || text[0] == '-') ||
+           (toupper(text[0]) == 'X' &&
+            ((text[1] >= '0' && text[1] <= '9') || (toupper(text[1]) >= 'A' && toupper(text[1]) <= 'F')));
 }
 
 LineTokenizerResult line_tokenizer_next_token(LineTokenizer *tokenizer, Token *result) {

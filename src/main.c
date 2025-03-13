@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "assembler/object.h"
 #include "assembler/parser.h"
 #include "assembler/symbol.h"
 #include "assembler/token.h"
@@ -85,6 +86,7 @@ int main() {
     for (size_t i = 0; i < instructions.len; i++)
         printf("instruction: %d\n", instructions.instructions[i].type);
 
+    write_to_object(&instructions, "amogus.obj");
 free_instructions:
     free(instructions.instructions);
 free_symbols:
