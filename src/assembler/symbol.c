@@ -32,7 +32,7 @@ SymbolTableResult add_symbol(SymbolTable *table, size_t *table_cap, char *symbol
 
 bool addr_spans_contains_addr(const SymbolTable *table, int32_t addr) {
     // don't need to check the current table addr spans since it's not filled out
-    for (size_t i = 0; i < table->addr_len - 1; i++) {
+    for (size_t i = 0; i + 1 < table->addr_len; i++) {
         if (addr >= table->addr_spans[i].orig_addr && addr <= table->addr_spans[i].end_addr)
             return true;
     }
@@ -142,7 +142,9 @@ void free_symbol_table(SymbolTable *table) {
 
 bool symbol_table_get(const SymbolTable *table, const char *span_start, size_t span_len, int32_t *output) {
     for (size_t i = 0; i < table->sym_len; i++) {
-        if (strncasecmp(table->symbols[i].symbol, span_start, span_len) == 0) {
+        if (strncasecmp(table->symbols[i].symbol, span_start, span_len) == 0 &&
+            table->symbols[i].symbol[span_len] == 0) {  // prevents an error where a symbol ABC would be equal to ABCD
+                                                        // since ABC len is 3 and compares first 3 chars
             *output = table->symbols[i].addr;
             return true;
         }

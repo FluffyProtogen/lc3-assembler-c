@@ -16,8 +16,9 @@ const struct {
     char *string;
     TokenType type;
 } TOKEN_STRS[] = {
-    {"ADD", ADD}, {"AND", AND}, {"JSR", JSR}, {"JSRR", JSRR}, {"LD", LD},   {"LDI", LDI}, {"LDR", LDR},
-    {"LEA", LEA}, {"NOT", NOT}, {"RTI", RTI}, {"ST", ST},     {"STI", STI}, {"STR", STR}, {"TRAP", TRAP},
+    {"ADD", ADD}, {"AND", AND},   {"JSR", JSR}, {"JSRR", JSRR}, {"LD", LD}, {"LDI", LDI},
+    {"LDR", LDR}, {"LEA", LEA},   {"NOT", NOT}, {"RTI", RTI},   {"ST", ST}, {"STI", STI},
+    {"STR", STR}, {"TRAP", TRAP}, {"RET", RET}, {"HALT", HALT},
 };
 
 const struct {
@@ -95,7 +96,8 @@ LineTokenizerResult line_tokenizer_next_token(LineTokenizer *tokenizer, Token *r
         cur_len++;
 
     for (size_t i = 0; i < sizeof(TOKEN_STRS) / sizeof(TOKEN_STRS[0]); i++) {
-        if (strncasecmp(tokenizer->remaining, TOKEN_STRS[i].string, cur_len) == 0) {
+        if (strncasecmp(tokenizer->remaining, TOKEN_STRS[i].string, cur_len) == 0 &&
+            TOKEN_STRS[i].string[cur_len] == 0) {
             *result = (Token){.span_start = tokenizer->remaining, .span_len = cur_len, .type = TOKEN_STRS[i].type};
             tokenizer->remaining += cur_len;
             return LT_SUCCESS;
@@ -103,7 +105,7 @@ LineTokenizerResult line_tokenizer_next_token(LineTokenizer *tokenizer, Token *r
     }
 
     for (size_t i = 0; i < sizeof(BR_STRS) / sizeof(BR_STRS[0]); i++) {
-        if (strncasecmp(tokenizer->remaining, BR_STRS[i].string, cur_len) == 0) {
+        if (strncasecmp(tokenizer->remaining, BR_STRS[i].string, cur_len) == 0 && BR_STRS[i].string[cur_len] == 0) {
             BrFlags flags = BR_STRS[i].br_flags;
             *result = (Token){
                 .span_start = tokenizer->remaining, .span_len = cur_len, .type = BR, .data = {.br_flags = flags}};
@@ -115,7 +117,8 @@ LineTokenizerResult line_tokenizer_next_token(LineTokenizer *tokenizer, Token *r
     // if text starts with ., it must be a pseudoop
     if (tokenizer->remaining[0] == '.') {
         for (size_t i = 0; i < sizeof(PSEUDOOP_STRS) / sizeof(PSEUDOOP_STRS[0]); i++) {
-            if (strncasecmp(tokenizer->remaining + 1, PSEUDOOP_STRS[i].string, cur_len - 1) == 0) {
+            if (strncasecmp(tokenizer->remaining + 1, PSEUDOOP_STRS[i].string, cur_len - 1) == 0 &&
+                PSEUDOOP_STRS[i].string[cur_len - 1] == 0) {
                 *result =
                     (Token){.span_start = tokenizer->remaining, .span_len = cur_len, .type = PSEUDOOP_STRS[i].type};
                 tokenizer->remaining += cur_len;

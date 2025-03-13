@@ -100,8 +100,11 @@ ParserResult parse_instructions(Instructions *instrs,
                     next_address += token->data.number;
                     PUSH_CONTINUE(((Instruction){.type = INSTR_BLKW, .data = {.u16 = token->data.number}}));
                 case STRINGZ:
+                    temp_instr = (Instruction){.type = INSTR_STRINGZ};
                     EXPECT_TOKEN(QUOTE);
                     EXPECT_TOKEN(TEXT);
+                    temp_instr.data.text = token->span_start;
+                    temp_instr.data.text_len = token->span_len;
                     char *unescaped;
                     size_t output_len;
                     UnescapeResult result =
@@ -113,8 +116,7 @@ ParserResult parse_instructions(Instructions *instrs,
                     if (result == US_ALLOC)
                         free(unescaped);
                     EXPECT_TOKEN(QUOTE);
-                    PUSH_CONTINUE(((Instruction){.type = INSTR_STRINGZ,
-                                                 .data = {.text = token->span_start, .text_len = token->span_len}}));
+                    PUSH_CONTINUE(temp_instr);
                 case END:
                     next_address = -1;
                     PUSH_CONTINUE(((Instruction){.type = INSTR_END}));
@@ -164,7 +166,7 @@ ParserResult parse_instructions(Instructions *instrs,
                     PUSH_CONTINUE(temp_instr);
                 case JMP:
                     EXPECT_TOKEN(REGISTER);
-                    PUSH_CONTINUE(((Instruction){.type = INSTR_JMP, .data.reg = token->data.reg}));
+                    PUSH_CONTINUE(((Instruction){.type = INSTR_JMP, .data.base_r = token->data.reg}));
                 case JSR:
                     temp_instr = (Instruction){.type = INSTR_JSR};
                     EXPECT_CALC_OFFSET(11);
@@ -194,7 +196,9 @@ ParserResult parse_instructions(Instructions *instrs,
                     EXPECT_TOKEN(REGISTER);
                     temp_instr.data.base_r = token->data.reg;
                     EXPECT_TOKEN(COMMA);
-                    EXPECT_CALC_OFFSET(6);
+                    EXPECT_TOKEN(NUMBER);
+                    if (!fit_to_bits(token->data.number, 6, &temp_instr.data.offset))
+                        return PS_NUMBER_TOO_LARGE;
                     PUSH_CONTINUE(temp_instr);
                 case LEA:
                     temp_instr = (Instruction){.type = INSTR_LEA};
@@ -212,7 +216,7 @@ ParserResult parse_instructions(Instructions *instrs,
                     temp_instr.data.sr1 = token->data.reg;
                     PUSH_CONTINUE(temp_instr);
                 case RET:
-                    PUSH_CONTINUE(((Instruction){.type = INSTR_JMP, .data.reg = 7}));
+                    PUSH_CONTINUE(((Instruction){.type = INSTR_JMP, .data.base_r = 7}));
                 case RTI:
                     PUSH_CONTINUE(((Instruction){.type = INSTR_RTI}));
                 case ST:
@@ -236,7 +240,10 @@ ParserResult parse_instructions(Instructions *instrs,
                     EXPECT_TOKEN(COMMA);
                     EXPECT_TOKEN(REGISTER);
                     temp_instr.data.base_r = token->data.reg;
-                    EXPECT_CALC_OFFSET(6);
+                    EXPECT_TOKEN(COMMA);
+                    EXPECT_TOKEN(NUMBER);
+                    if (!fit_to_bits(token->data.number, 6, &temp_instr.data.offset))
+                        return PS_NUMBER_TOO_LARGE;
                     PUSH_CONTINUE(temp_instr);
                 case TRAP:
                     EXPECT_TOKEN(NUMBER);

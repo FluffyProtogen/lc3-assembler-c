@@ -98,17 +98,17 @@ bool write_to_object(const Instructions *instructions, char *file_name) {
             case INSTR_ADD:
                 W((0b0001 << 12) | (data->dr << 9) | (data->sr1 << 6) | data->sr2);
             case INSTR_ADD_IMM:
-                W((0b0001 << 12) | (data->dr << 9) | (data->sr1 << 6) < (1 << 5) | data->imm);
+                W((0b0001 << 12) | (data->dr << 9) | (data->sr1 << 6) | (1 << 5) | data->imm);
             case INSTR_AND:
                 W((0b0101 << 12) | (data->dr << 9) | (data->sr1 << 6) | data->sr2);
             case INSTR_AND_IMM:
-                W((0b0101 << 12) | (data->dr << 9) | (data->sr1 << 6) < (1 << 5) | data->imm);
+                W((0b0101 << 12) | (data->dr << 9) | (data->sr1 << 6) | (1 << 5) | data->imm);
             case INSTR_BR:
-                W((data->br_flags.n << 11) | (data->br_flags.n << 10) | (data->br_flags.n << 9) | data->offset);
+                W((data->br_flags.n << 11) | (data->br_flags.z << 10) | (data->br_flags.p << 9) | data->offset);
             case INSTR_JMP:
                 W((0b1100 << 12) | (data->base_r << 6));
             case INSTR_JSR:
-                W((0b0100 << 12) | (1 << 1) | data->offset);
+                W((0b0100 << 12) | (1 << 11) | data->offset);
             case INSTR_JSRR:
                 W((0b0100 << 12) | (data->base_r << 6));
             case INSTR_LD:
@@ -120,7 +120,7 @@ bool write_to_object(const Instructions *instructions, char *file_name) {
             case INSTR_LEA:
                 W((0b1110 << 12) | (data->dr << 9) | data->offset);
             case INSTR_NOT:
-                W((0b1001 << 12) | (data->dr << 9) | data->offset);
+                W((0b1001 << 12) | (data->dr << 9) | (data->sr1 << 6) | 0b111111);
             case INSTR_RTI:
                 W(0b1000 << 12);
             case INSTR_ST:
@@ -130,7 +130,7 @@ bool write_to_object(const Instructions *instructions, char *file_name) {
             case INSTR_STR:
                 W((0b0111 << 12) | (data->sr1 << 9) | (data->base_r << 6) | data->offset);
             case INSTR_TRAP:
-                W((0b1111 << 12) | (data->offset));
+                W((0b1111 << 12) | (data->u16));
             case INSTR_END:
                 break;
         }
@@ -141,26 +141,3 @@ bool write_to_object(const Instructions *instructions, char *file_name) {
     fclose(file);
     return true;
 }
-// INSTR_ADD,
-// INSTR_ADD_IMM,
-// INSTR_AND,
-// INSTR_AND_IMM,
-// INSTR_BR,
-// INSTR_JMP,
-// INSTR_JSR,
-// INSTR_JSRR,
-// INSTR_LD,
-// INSTR_LDI,
-// INSTR_LDR,
-// INSTR_LEA,
-// INSTR_NOT,
-// INSTR_RTI,
-// INSTR_ST,
-// INSTR_STI,
-// INSTR_STR,
-// INSTR_TRAP,
-// INSTR_ORIG,
-// INSTR_FILL,
-// INSTR_BLKW,
-// INSTR_STRINGZ,
-// INSTR_END,

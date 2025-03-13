@@ -7,7 +7,6 @@
 #include "assembler/token.h"
 
 int main() {
-    printf("TODO: check for overlapping memory from origs\n");
     int ret = 0;
     const char *lines[] = {
         ".orig x3000",                      //
@@ -25,14 +24,6 @@ int main() {
         "Fluffy MantledBeast LEA R2, 0\n",  //
         ".end",                             //
     };
-
-    // const char *lines[] = {
-    //     ".orig x3000",            //
-    //     "AND R0, R0, 0",          //
-    //     "amogus ADD R0, R0, 15",  //
-    //     "ADD R1, R0, R0",         //
-    //     ".end",                   //
-    // };
 
     LineTokensList token_list;
     size_t lines_read;
@@ -77,7 +68,7 @@ int main() {
     Instructions instructions;
     ParserResult ps_result = parse_instructions(&instructions, &token_list, &symbol_table, &lines_read);
     if (ps_result != PS_SUCCESS) {
-        printf("Parsing failed at line %lu with err %d\n", lines_read, ps_result);
+        printf("Parsing failed at line %lu with err %d: %s\n", lines_read, ps_result, lines[lines_read - 1]);
         ret = 1;
         goto free_instructions;
     }

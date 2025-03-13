@@ -46,7 +46,6 @@ typedef struct {
                 uint16_t imm;
             };
         };
-        uint8_t reg;
         uint16_t u16;
         struct {
             const char *text;
