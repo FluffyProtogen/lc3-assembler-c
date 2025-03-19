@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -9,20 +10,9 @@
 int main() {
     int ret = 0;
     const char *lines[] = {
-        ".orig x3000",                      //
-        "ADD R1, R0, -16\n",                //
-        "NoT R1, R1\n",                     //
-        "ADD R1, R1, 4\n",                  //
-        "\n",                               //
-        "; amogus\n",                       //
-        "FLUF BRnzp AMOGUS\n",              //
-        ".blkw 3",                          //
-        ".end",                             //
-        ".orig x3103",                      //
-        "AMOgus ADD R1, R1, R1",            //
-        "owo .stringz \"hi\\n\"",           //
-        "Fluffy MantledBeast LEA R2, 0\n",  //
-        ".end",                             //
+        ".orig x3000",  //
+        "LEA R1, X10",  //
+        ".end",         //
     };
 
     LineTokensList token_list;
@@ -76,8 +66,8 @@ int main() {
     printf("\n--Instructions len: %lu--\n", instructions.len);
     for (size_t i = 0; i < instructions.len; i++)
         printf("instruction: %d\n", instructions.instructions[i].type);
-
     write_to_object(&instructions, "amogus.obj");
+
 free_instructions:
     free(instructions.instructions);
 free_symbols:

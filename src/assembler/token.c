@@ -16,9 +16,9 @@ const struct {
     char *string;
     TokenType type;
 } TOKEN_STRS[] = {
-    {"ADD", ADD}, {"AND", AND},   {"JSR", JSR}, {"JSRR", JSRR}, {"LD", LD}, {"LDI", LDI},
-    {"LDR", LDR}, {"LEA", LEA},   {"NOT", NOT}, {"RTI", RTI},   {"ST", ST}, {"STI", STI},
-    {"STR", STR}, {"TRAP", TRAP}, {"RET", RET}, {"HALT", HALT},
+    {"ADD", ADD}, {"AND", AND},   {"JSR", JSR}, {"JSRR", JSRR}, {"LD", LD},   {"LDI", LDI},   {"LDR", LDR},
+    {"LEA", LEA}, {"NOT", NOT},   {"RTI", RTI}, {"ST", ST},     {"STI", STI}, {"STR", STR},   {"TRAP", TRAP},
+    {"RET", RET}, {"GETC", GETC}, {"OUT", OUT}, {"PUTS", PUTS}, {"IN", IN},   {"HALT", HALT},
 };
 
 const struct {
@@ -43,7 +43,7 @@ const struct {
 LineTokenizerResult parse_int(const char *text, size_t cur_len, int32_t *output) {
     errno = 0;
     char *end;
-    long num = strtol(text + (text[0] == 'x'), &end, (text[0] == 'x') ? 16 : 10);
+    long num = strtol(text + (toupper(text[0]) == 'X'), &end, (toupper(text[0]) == 'X') ? 16 : 10);
     if ((num == LONG_MAX || num == LONG_MIN) && errno == ERANGE)
         return LT_INTEGER_TOO_LARGE;
     if (num > USHRT_MAX || num < SHRT_MIN)
