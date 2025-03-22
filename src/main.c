@@ -1,11 +1,13 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "assembler/object.h"
 #include "assembler/parser.h"
 #include "assembler/symbol.h"
 #include "assembler/token.h"
+#include "vm.h"
 
 int main() {
     int ret = 0;
@@ -67,6 +69,17 @@ int main() {
     for (size_t i = 0; i < instructions.len; i++)
         printf("instruction: %d\n", instructions.instructions[i].type);
     write_to_object(&instructions, "amogus.obj");
+
+    // srand(time(NULL));
+    // VirtualMachine vm;
+    // vm_randomize(&vm);
+    // if (!vm_load(&vm, "")) {
+    //     printf("VM load failed.\n");
+    //     goto free_instructions;
+    // }
+    //
+    // while (vm_exec_next_instruction(&vm))
+    //     ;
 
 free_instructions:
     free(instructions.instructions);

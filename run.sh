@@ -1,2 +1,2 @@
 #!/bin/bash
-gcc -g -lm -o main src/*.c src/assembler/*.c -Wall -Wextra -fsanitize=address -fno-omit-frame-pointer && ./main
+gcc -g3 -lm -o main src/*.c src/assembler/*.c -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer && ./main
