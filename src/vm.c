@@ -27,7 +27,9 @@ bool vm_load(VirtualMachine *vm, char *file_name) {
             uint16_t result = 0;
             if (fscanf(file, "%hx\n", &result) == 1)
                 vm->memory[cur_addr++] = result;
-            else if (fscanf(file, "????\n%hn", &result), result != 5)
+            else if (fscanf(file, "????\n%hn", &result), result == 5)
+                cur_addr++;
+            else
                 return false;
         }
 
@@ -95,7 +97,7 @@ bool vm_exec_next_instruction(VirtualMachine *vm) {
             offset = sext(instr & 0x1FF, 9);
             addr = vm->pc + offset;
             value = vm->memory[addr];
-            printf("ld: %x\n", value);
+            printf("ld (%x) = %x\n", addr, value);
             write_reg(vm, dr, value);
             break;
         case 0x3:  // ST
@@ -182,8 +184,22 @@ bool vm_exec_next_instruction(VirtualMachine *vm) {
             }[dr] = vm->pc + offset;
             printf("\n");
             break;
-        case 0xF:  // Trap
-            return false;
+        case 0xF:;  // Trap
+            int trap = instr & 0xFF;
+            switch (trap) {
+                case 0x22:;  // PUTS
+                    uint16_t i = vm->r0;
+                    for (;;) {
+                        char c = vm->memory[i++];
+                        if (!c)
+                            break;
+                        printf("%c", c);
+                        fflush(stdout);
+                    }
+                    break;
+                case 0x25:  // HALT
+                    return false;
+            }
     }
     return true;
 }

@@ -89,8 +89,13 @@ bool write_to_object(const Instructions *instructions, char *file_name) {
                 size_t output_len;
                 UnescapeResult r = unescape_string(data->text, instr->data.text_len, &unescaped, &output_len);
                 const char *text = (r == US_ALLOC) ? unescaped : data->text;
-                while (*text)
-                    WRITE_HEX(*text++);
+                if (r == US_ALLOC) {
+                    while (*text)
+                        WRITE_HEX(*text++);
+                } else {
+                    for (size_t i = 0; i < instr->data.text_len; i++)
+                        WRITE_HEX(data->text[i]);
+                }
                 WRITE_HEX(0);
                 if (r == US_ALLOC)
                     free(unescaped);

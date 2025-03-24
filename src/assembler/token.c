@@ -10,6 +10,7 @@
 
 typedef struct {
     const char *remaining;
+    bool started_quote;
 } LineTokenizer;
 
 const struct {
@@ -78,9 +79,13 @@ LineTokenizerResult line_tokenizer_next_token(LineTokenizer *tokenizer, Token *r
                 return LT_SUCCESS;
             case '"':
                 *result = (Token){.span_start = tokenizer->remaining++, .span_len = 1, .type = QUOTE};
+                tokenizer->started_quote = !tokenizer->started_quote;
                 return LT_SUCCESS;
             case ' ':
-                tokenizer->remaining++;
+                if (tokenizer->started_quote)
+                    found = true;
+                else
+                    tokenizer->remaining++;
                 break;
             default:
                 found = true;
@@ -90,7 +95,7 @@ LineTokenizerResult line_tokenizer_next_token(LineTokenizer *tokenizer, Token *r
 
     // find where the current token ends
     int cur_len = 0;
-    while (tokenizer->remaining[cur_len] != ' ' && tokenizer->remaining[cur_len] != 0 &&
+    while ((tokenizer->started_quote || tokenizer->remaining[cur_len] != ' ') && tokenizer->remaining[cur_len] != 0 &&
            tokenizer->remaining[cur_len] != ',' && tokenizer->remaining[cur_len] != '\n' &&
            tokenizer->remaining[cur_len] != ';' && tokenizer->remaining[cur_len] != '"')
         cur_len++;

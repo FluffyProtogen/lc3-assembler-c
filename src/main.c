@@ -12,9 +12,12 @@
 int main() {
     int ret = 0;
     const char *lines[] = {
-        ".orig x3000",  //
-        "LEA R1, X10",  //
-        ".end",         //
+        ".orig x3000",    //
+        "LEA R0, FLOOF",  //
+        "PUTS",
+        "HALT",                        //
+        "FLOOF .stringz \"mantled\"",  //
+        ".end",                        //
     };
 
     LineTokensList token_list;
@@ -68,18 +71,18 @@ int main() {
     printf("\n--Instructions len: %lu--\n", instructions.len);
     for (size_t i = 0; i < instructions.len; i++)
         printf("instruction: %d\n", instructions.instructions[i].type);
-    write_to_object(&instructions, "amogus.obj");
+    write_to_object(&instructions, "floof.obj");
 
-    // srand(time(NULL));
-    // VirtualMachine vm;
-    // vm_randomize(&vm);
-    // if (!vm_load(&vm, "")) {
-    //     printf("VM load failed.\n");
-    //     goto free_instructions;
-    // }
-    //
-    // while (vm_exec_next_instruction(&vm))
-    //     ;
+    srand(time(NULL));
+    VirtualMachine vm;
+    vm_randomize(&vm);
+    if (!vm_load(&vm, "floof.obj")) {
+        printf("VM load failed.\n");
+        goto free_instructions;
+    }
+
+    while (vm_exec_next_instruction(&vm))
+        ;
 
 free_instructions:
     free(instructions.instructions);
